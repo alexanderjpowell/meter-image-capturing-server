@@ -1,0 +1,1 @@
+# meter-image-capturing-server

@@ -18,6 +18,10 @@ const runtimeOpts = {
 	timeoutSeconds: 540 // 9 minutes is max timeout
 };
 
+exports.adminTrigger = functions.runWith(runtimeOpts).region(region).firestore.document().onWrite((change, context) => {
+	
+});
+
 exports.uploadToDatabase = functions.runWith(runtimeOpts).region(region).storage.bucket(defaultBucket).object().onFinalize(async (object) => {
 
 	try {

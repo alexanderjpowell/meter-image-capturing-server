@@ -1,26 +1,171 @@
-// to deploy: firebase deploy --only functions
-
 'use strict';
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp();
-
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const readline = require('readline');
-
+const sgMail = require('@sendgrid/mail');
 const region = 'us-central1';
 const defaultBucket = 'meter-image-capturing.appspot.com';
+
+admin.initializeApp();
 
 const runtimeOpts = {
 	timeoutSeconds: 540 // 9 minutes is max timeout
 };
 
-exports.adminTrigger = functions.runWith(runtimeOpts).region(region).firestore.document().onWrite((change, context) => {
-	
-});
+const defaultRuntimeOpts = {
+	timeoutSeconds: 60
+};
+
+exports.adminTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
+	.document('users/{userId}')
+	.onWrite((change, context) => {
+
+		const oldValues = change.before.data();
+		const newValues = change.after.data();
+		const userId = context.params.userId;
+
+		const oldAdminEmail = oldValues.adminEmail;
+		const adminEmail = newValues.adminEmail;
+		const casinoName = newValues.casinoName;
+		//if (!casinoName) {
+		//	casinoName = 
+		//}
+
+		// Break out if there is no change to the admin email
+		if (oldAdminEmail === adminEmail) return null;
+
+		// Revoke privileges for old admin email if it exists
+		if (oldAdminEmail) {
+			admin.firestore().collection('admins').doc(oldAdminEmail).collection('casinos').doc(userId).delete();
+		}
+
+		// Set permissions and create new accounts if necessary
+		if (adminEmail) {
+
+			// Get admin uid -> adminUID
+			// First, if old admin email has permissions to view {userId} account
+			// check if admins/{adminUID}/casinos/{userId} exists
+			admin.auth().getUserByEmail(adminEmail)
+				.then((userRecord) => {
+					const uid = userRecord.toJSON().uid;
+
+					let text = 'You have been given admin access to ' + casinoName;
+					let html = '<h3>' + text + '</h3>';
+					sendEmail(adminEmail, casinoName + ' has listed you an administrator', text, html);
+					//.catch((error) => {
+					//	console.log(error);
+					//});
+
+					let data = { casinoName: casinoName };
+					//
+					let docRef = admin.firestore().collection('admins').doc(adminEmail);
+					docRef.set({ adminUID: uid }, {merge: true});
+					//
+					let documentRef = admin.firestore().collection('admins').doc(adminEmail).collection('casinos').doc(userId);
+					return documentRef.set(data, {merge: true});
+				})
+				.catch((error) => {
+					if (error.code === 'auth/user-not-found') {
+						//Create the user in auth
+						let password = '12345678';
+						let userData = { 
+							email: adminEmail,
+							password: password
+						};
+						admin.auth().createUser(userData)
+							.then((userRecord) => {
+								let uid = userRecord.toJSON().uid;
+								// Send email to new user with their password
+								let text = 'Your password is: ' + password + '\n\nThis can be reset in the mobile app.';
+								text = text + '\n\nYou have been given admin access to ' + casinoName;
+								let html = '<h3>' + text + '</h3>';
+								sendEmail(adminEmail, 'Welcome to Meter Image Capturing', text, html);
+								//.catch((error) => {
+								//	console.log(error);
+								//});
+
+								// Write to db
+								let data = { casinoName: casinoName };
+								//
+								let docRef = admin.firestore().collection('admins').doc(adminEmail);
+								docRef.set({ adminUID: uid }, {merge: true});
+								//
+								let documentRef = admin.firestore().collection('admins').doc(adminEmail).collection('casinos').doc(userId);
+								return documentRef.set(data, {merge: true});
+							})
+							.catch((error) => {
+								console.log('Error creating new user:', error);
+								return 0;
+							});
+					}
+					return 0;
+				});
+
+			// Check if the email exists in firebase auth as an admin account
+			// If it does exist, get the uid and create a new document in the casinos collection
+			// If it doesn't already exist create a new user and add to the admins collection in firestore
+			//return null;
+		}
+		return null;
+
+	});
+
+
+exports.testTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
+	.document('users/{userId}')
+	.onWrite((change, context) => {
+
+		let SENDGRID_API_KEY = '<SENDGRID_API_KEY>';
+
+		sgMail.setApiKey(SENDGRID_API_KEY);
+		const msg = {
+			to: '',
+			from: '',
+			subject: 'Sending with Twilio SendGrid is Fun',
+			text: 'and easy to do anywhere, even with Node.js',
+			html: '<strong>and easy to do anywhere, even with Node.js</strong>',
+		};
+		return sgMail.send(msg).catch((error) => {
+			console.log(error)
+		});
+
+		//return 1;
+
+	});
+
+function sendEmail(emailRecipient, subject, text, html) {
+
+	let SENDGRID_API_KEY = '<SENDGRID_API_KEY>';
+	sgMail.setApiKey(SENDGRID_API_KEY);
+	const msg = {
+		to: emailRecipient,
+		from: 'ajpowell@email.wm.edu',
+		subject: subject,
+		text: text,
+		html: html,
+	};
+	return sgMail.send(msg).catch((error) => {
+		console.log(error)
+	});
+
+}
+
+async function getUidByEmail(email) {
+	let userRecord = await admin.auth().getUserByEmail(email).catch((error) => {return 0;});
+	if (userRecord) {
+		let uid = userRecord.toJSON().uid;
+		//console.log(uid);
+		//console.log(userRecord);
+		return Promise.resolve(uid);
+	} else {
+		console.log('user doesn\'t exist');
+		return Promise.resolve(0);
+	}
+}
 
 exports.uploadToDatabase = functions.runWith(runtimeOpts).region(region).storage.bucket(defaultBucket).object().onFinalize(async (object) => {
 

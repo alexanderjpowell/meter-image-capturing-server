@@ -9,7 +9,7 @@ firebase deploy --only functions
 
 To deploy a specific function only:
 ```
-firebase deploy --only functions:adminTrigger
+firebase deploy --only functions:uploadToDatabase
 ```
 
 Note: Ensure that all functions are idempotent, meaning the results remain unchanged when an operation is applied more than once.

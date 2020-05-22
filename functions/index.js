@@ -6,7 +6,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const readline = require('readline');
-const sgMail = require('@sendgrid/mail');
+//const sgMail = require('@sendgrid/mail');
 const region = 'us-central1';
 const defaultBucket = 'meter-image-capturing.appspot.com';
 
@@ -303,6 +303,8 @@ exports.uploadToDatabase = functions.runWith(runtimeOpts).region(region).storage
 						if (progressiveDescriptionsArray.length > 0) {
 							//objectData['descriptionsArray'] = progressiveDescriptionsArray;
 							objectData['da'] = progressiveDescriptionsArray;
+						} else {
+							objectData['da'] = [];
 						}
 						arrayData.push(objectData);
 					}

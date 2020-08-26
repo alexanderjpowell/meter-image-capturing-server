@@ -9,6 +9,7 @@ const readline = require('readline');
 //const sgMail = require('@sendgrid/mail');
 const region = 'us-central1';
 const defaultBucket = 'meter-image-capturing.appspot.com';
+const toDoFilesBucket = 'to-do-files';
 
 admin.initializeApp();
 
@@ -20,7 +21,7 @@ const defaultRuntimeOpts = {
 	timeoutSeconds: 60
 };
 
-exports.adminTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
+/*exports.adminTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
 	.document('users/{userId}')
 	.onWrite((change, context) => {
 
@@ -112,10 +113,10 @@ exports.adminTrigger = functions.runWith(defaultRuntimeOpts).region(region).fire
 		}
 		return null;
 
-	});
+	});*/
 
 
-exports.testTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
+/*exports.testTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
 	.document('users/{userId}')
 	.onWrite((change, context) => {
 
@@ -135,9 +136,9 @@ exports.testTrigger = functions.runWith(defaultRuntimeOpts).region(region).fires
 
 		//return 1;
 
-	});
+	});*/
 
-function sendEmail(emailRecipient, subject, text, html) {
+/*function sendEmail(emailRecipient, subject, text, html) {
 
 	let SENDGRID_API_KEY = '<SENDGRID_API_KEY>';
 	sgMail.setApiKey(SENDGRID_API_KEY);
@@ -152,9 +153,9 @@ function sendEmail(emailRecipient, subject, text, html) {
 		console.log(error)
 	});
 
-}
+}*/
 
-async function getUidByEmail(email) {
+/*async function getUidByEmail(email) {
 	let userRecord = await admin.auth().getUserByEmail(email).catch((error) => {return 0;});
 	if (userRecord) {
 		let uid = userRecord.toJSON().uid;
@@ -165,7 +166,222 @@ async function getUidByEmail(email) {
 		console.log('user doesn\'t exist');
 		return Promise.resolve(0);
 	}
-}
+}*/
+
+exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region).storage.bucket(toDoFilesBucket).object().onFinalize(async(object) => {
+	try {
+		const fileBucket = object.bucket;
+		const filePath = object.name;
+		const contentType = object.contentType;
+		const metageneration = object.metageneration;
+
+		const fileName = path.basename(filePath);
+		const bucket = admin.storage().bucket(fileBucket);
+		const tempFilePath = path.join(os.tmpdir(), fileName);
+		const metadata = {
+			contentType: contentType,
+		};
+
+		const remoteFile = bucket.file(filePath);
+
+		// filename is <uid>.csv
+		const uid = path.parse(fileName).name;
+		const localFileName = '/tmp/' + fileName;
+
+		let collectionRef = admin.firestore().collection('formUploads').doc(uid).collection('uploadFormData');
+
+		const stream = remoteFile.createReadStream();
+
+		return new Promise((resolve, reject) => {
+
+			stream.on('error', (error) => {
+				console.log('error reading file: ', error);
+				reject(error);
+			})
+			.on('data', (chunk) => {
+				//console.log('data');
+				//console.log(chunk.toString());
+			})
+			.on('finish', () => {
+				console.log('finish');
+			})
+			.on('end', () => {
+				console.log('end');
+
+				let rl = readline.createInterface({
+					input: fs.createReadStream(localFileName)
+				});
+
+				let line_no = 0;
+				let arrayData = [];
+
+				let locationIndex;
+				let machineIdIndex;
+				let descriptionIndex;
+				let userIndex;
+				let progressiveCountIndex;
+				let p1Index, p2Index, p3Index, p4Index, p5Index, p6Index, p7Index, p8Index, p9Index, p10Index;
+				let r1Index, r2Index, r3Index, r4Index, r5Index, r6Index, r7Index, r8Index, r9Index, r10Index;
+
+				rl.on('line', (line) => {
+					//let x = line.split(',');
+					let x = CSVToArray(line, ',')[0];
+
+					if (line_no === 0) {
+						// Required headers
+						if (!x.includes('location') || !x.includes('machine_id') || !x.includes('description')) {
+							return;
+						}
+						locationIndex = x.indexOf('location');
+						machineIdIndex = x.indexOf('machine_id');
+						descriptionIndex = x.indexOf('description');
+						// Optional headers
+						if (x.includes('user')) {
+							userIndex = x.indexOf('user');
+						}
+						if (x.includes('progressive_count')) {
+							progressiveCountIndex = x.indexOf('progressive_count');
+						}
+						if (x.includes('p_1')) {
+							p1Index = x.indexOf('p_1');
+						}
+						if (x.includes('p_2')) {
+							p2Index = x.indexOf('p_2');
+						}
+						if (x.includes('p_3')) {
+							p3Index = x.indexOf('p_3');
+						}
+						if (x.includes('p_4')) {
+							p4Index = x.indexOf('p_4');
+						}
+						if (x.includes('p_5')) {
+							p5Index = x.indexOf('p_5');
+						}
+						if (x.includes('p_6')) {
+							p6Index = x.indexOf('p_6');
+						}
+						if (x.includes('p_7')) {
+							p7Index = x.indexOf('p_7');
+						}
+						if (x.includes('p_8')) {
+							p8Index = x.indexOf('p_8');
+						}
+						if (x.includes('p_9')) {
+							p9Index = x.indexOf('p_9');
+						}
+						if (x.includes('p_10')) {
+							p10Index = x.indexOf('p_10');
+						}
+
+						//
+						if (x.includes('r_1')) {
+							r1Index = x.indexOf('r_1');
+						}
+						if (x.includes('r_2')) {
+							r2Index = x.indexOf('r_2');
+						}
+						if (x.includes('r_3')) {
+							r3Index = x.indexOf('r_3');
+						}
+						if (x.includes('r_4')) {
+							r4Index = x.indexOf('r_4');
+						}
+						if (x.includes('r_5')) {
+							r5Index = x.indexOf('r_5');
+						}
+						if (x.includes('r_6')) {
+							r6Index = x.indexOf('r_6');
+						}
+						if (x.includes('r_7')) {
+							r7Index = x.indexOf('r_7');
+						}
+						if (x.includes('r_8')) {
+							r8Index = x.indexOf('r_8');
+						}
+						if (x.includes('r_9')) {
+							r9Index = x.indexOf('r_9');
+						}
+						if (x.includes('r_10')) {
+							r10Index = x.indexOf('r_10');
+						}
+						//
+					}
+					else {
+						let objectData = {
+							l: x[locationIndex],
+							m: x[machineIdIndex],
+							d: x[descriptionIndex]
+						};
+						if (userIndex !== undefined) {
+							objectData['u'] = x[userIndex];
+						}
+						let progressiveDescriptionsArray = [];
+						if (p1Index !== undefined) { progressiveDescriptionsArray.push(x[p1Index]); }
+						if (p2Index !== undefined) { progressiveDescriptionsArray.push(x[p2Index]); }
+						if (p3Index !== undefined) { progressiveDescriptionsArray.push(x[p3Index]); }
+						if (p4Index !== undefined) { progressiveDescriptionsArray.push(x[p4Index]); }
+						if (p5Index !== undefined) { progressiveDescriptionsArray.push(x[p5Index]); }
+						if (p6Index !== undefined) { progressiveDescriptionsArray.push(x[p6Index]); }
+						if (p7Index !== undefined) { progressiveDescriptionsArray.push(x[p7Index]); }
+						if (p8Index !== undefined) { progressiveDescriptionsArray.push(x[p8Index]); }
+						if (p9Index !== undefined) { progressiveDescriptionsArray.push(x[p9Index]); }
+						if (p10Index !== undefined) { progressiveDescriptionsArray.push(x[p10Index]); }
+						if (progressiveDescriptionsArray.length > 0) {
+							objectData['da'] = progressiveDescriptionsArray;
+						} else {
+							objectData['da'] = [];
+						}
+						//
+						let resetValuesArray = [];
+						if (r1Index !== undefined) { resetValuesArray.push(x[r1Index]); }
+						if (r2Index !== undefined) { resetValuesArray.push(x[r2Index]); }
+						if (r3Index !== undefined) { resetValuesArray.push(x[r3Index]); }
+						if (r4Index !== undefined) { resetValuesArray.push(x[r4Index]); }
+						if (r5Index !== undefined) { resetValuesArray.push(x[r5Index]); }
+						if (r6Index !== undefined) { resetValuesArray.push(x[r6Index]); }
+						if (r7Index !== undefined) { resetValuesArray.push(x[r7Index]); }
+						if (r8Index !== undefined) { resetValuesArray.push(x[r8Index]); }
+						if (r9Index !== undefined) { resetValuesArray.push(x[r9Index]); }
+						if (r10Index !== undefined) { resetValuesArray.push(x[r10Index]); }
+						if (resetValuesArray.length > 0) {
+							objectData['ra'] = resetValuesArray;
+						} else {
+							objectData['ra'] = [];
+						}
+						//
+						arrayData.push(objectData);
+					}
+					line_no++;
+				});
+
+				rl.on('close', (line) => {
+					console.log('Total lines : ' + line_no);
+					let data = {
+						uploadArray: arrayData,
+						rowCount: line_no,
+						timestamp: admin.firestore.FieldValue.serverTimestamp()
+					};
+					let documentRef = admin.firestore().collection('formUploads').doc(uid);
+					documentRef.set(data).then((res) => {
+						console.log('document successfully created');
+						resolve();
+						return 1;
+					})
+					.catch((err) => {
+						console.log(`Failed to create document: ${err}`);
+						reject(err);
+						return 0;
+					});
+					fs.unlinkSync(localFileName);
+				});
+			}).pipe(fs.createWriteStream(localFileName));
+		});
+	}
+	catch (error) {
+		console.log('catch error: ', error);
+		return 0;
+	}
+});
 
 exports.uploadToDatabase = functions.runWith(runtimeOpts).region(region).storage.bucket(defaultBucket).object().onFinalize(async (object) => {
 
@@ -315,6 +531,7 @@ exports.uploadToDatabase = functions.runWith(runtimeOpts).region(region).storage
 					console.log('Total lines : ' + line_no);
 					let data = {
 						uploadArray: arrayData,
+						rowCount: line_no,
 						timestamp: admin.firestore.FieldValue.serverTimestamp()
 					};
 					let documentRef = admin.firestore().collection('formUploads').doc(uid);

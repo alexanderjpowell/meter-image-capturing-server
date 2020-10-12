@@ -172,23 +172,21 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 	try {
 		const fileBucket = object.bucket;
 		const filePath = object.name;
-		const contentType = object.contentType;
-		const metageneration = object.metageneration;
+		//const contentType = object.contentType;
+		//const metageneration = object.metageneration;
 
 		const fileName = path.basename(filePath);
 		const bucket = admin.storage().bucket(fileBucket);
-		const tempFilePath = path.join(os.tmpdir(), fileName);
+		/*const tempFilePath = path.join(os.tmpdir(), fileName);
 		const metadata = {
 			contentType: contentType,
-		};
+		};*/
 
 		const remoteFile = bucket.file(filePath);
 
 		// filename is <uid>.csv
 		const uid = path.parse(fileName).name;
 		const localFileName = '/tmp/' + fileName;
-
-		let collectionRef = admin.firestore().collection('formUploads').doc(uid).collection('uploadFormData');
 
 		const stream = remoteFile.createReadStream();
 
@@ -222,6 +220,10 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 				let progressiveCountIndex;
 				let p1Index, p2Index, p3Index, p4Index, p5Index, p6Index, p7Index, p8Index, p9Index, p10Index;
 				let r1Index, r2Index, r3Index, r4Index, r5Index, r6Index, r7Index, r8Index, r9Index, r10Index;
+				//
+				let b1Index, b2Index, b3Index, b4Index, b5Index, b6Index, b7Index, b8Index, b9Index, b10Index;
+				let i1Index, i2Index, i3Index, i4Index, i5Index, i6Index, i7Index, i8Index, i9Index, i10Index;
+				//
 
 				rl.on('line', (line) => {
 					//let x = line.split(',');
@@ -305,6 +307,72 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 							r10Index = x.indexOf('r_10');
 						}
 						//
+
+						//
+						if (x.includes('b_1')) {
+							b1Index = x.indexOf('b_1');
+						}
+						if (x.includes('b_2')) {
+							b2Index = x.indexOf('b_2');
+						}
+						if (x.includes('b_3')) {
+							b3Index = x.indexOf('b_3');
+						}
+						if (x.includes('b_4')) {
+							b4Index = x.indexOf('b_4');
+						}
+						if (x.includes('b_5')) {
+							b5Index = x.indexOf('b_5');
+						}
+						if (x.includes('b_6')) {
+							b6Index = x.indexOf('b_6');
+						}
+						if (x.includes('b_7')) {
+							b7Index = x.indexOf('b_7');
+						}
+						if (x.includes('b_8')) {
+							b8Index = x.indexOf('b_8');
+						}
+						if (x.includes('b_9')) {
+							b9Index = x.indexOf('b_9');
+						}
+						if (x.includes('b_10')) {
+							b10Index = x.indexOf('b_10');
+						}
+						//
+
+						//
+						if (x.includes('i_1')) {
+							i1Index = x.indexOf('i_1');
+						}
+						if (x.includes('i_2')) {
+							i2Index = x.indexOf('i_2');
+						}
+						if (x.includes('i_3')) {
+							i3Index = x.indexOf('i_3');
+						}
+						if (x.includes('i_4')) {
+							i4Index = x.indexOf('i_4');
+						}
+						if (x.includes('i_5')) {
+							i5Index = x.indexOf('i_5');
+						}
+						if (x.includes('i_6')) {
+							i6Index = x.indexOf('i_6');
+						}
+						if (x.includes('i_7')) {
+							i7Index = x.indexOf('i_7');
+						}
+						if (x.includes('i_8')) {
+							i8Index = x.indexOf('i_8');
+						}
+						if (x.includes('i_9')) {
+							i9Index = x.indexOf('i_9');
+						}
+						if (x.includes('i_10')) {
+							i10Index = x.indexOf('i_10');
+						}
+						//
 					}
 					else {
 						let objectData = {
@@ -349,6 +417,43 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 							objectData['ra'] = [];
 						}
 						//
+						//
+						let baseValuesArray = [];
+						if (b1Index !== undefined) { baseValuesArray.push(x[b1Index]); }
+						if (b2Index !== undefined) { baseValuesArray.push(x[b2Index]); }
+						if (b3Index !== undefined) { baseValuesArray.push(x[b3Index]); }
+						if (b4Index !== undefined) { baseValuesArray.push(x[b4Index]); }
+						if (b5Index !== undefined) { baseValuesArray.push(x[b5Index]); }
+						if (b6Index !== undefined) { baseValuesArray.push(x[b6Index]); }
+						if (b7Index !== undefined) { baseValuesArray.push(x[b7Index]); }
+						if (b8Index !== undefined) { baseValuesArray.push(x[b8Index]); }
+						if (b9Index !== undefined) { baseValuesArray.push(x[b9Index]); }
+						if (b10Index !== undefined) { baseValuesArray.push(x[b10Index]); }
+						if (baseValuesArray.length > 0) {
+							objectData['ba'] = baseValuesArray;
+						} else {
+							objectData['ba'] = [];
+						}
+						//
+						//
+						let incrementValuesArray = [];
+						if (i1Index !== undefined) { incrementValuesArray.push(x[i1Index]); }
+						if (i2Index !== undefined) { incrementValuesArray.push(x[i2Index]); }
+						if (i3Index !== undefined) { incrementValuesArray.push(x[i3Index]); }
+						if (i4Index !== undefined) { incrementValuesArray.push(x[i4Index]); }
+						if (i5Index !== undefined) { incrementValuesArray.push(x[i5Index]); }
+						if (i6Index !== undefined) { incrementValuesArray.push(x[i6Index]); }
+						if (i7Index !== undefined) { incrementValuesArray.push(x[i7Index]); }
+						if (i8Index !== undefined) { incrementValuesArray.push(x[i8Index]); }
+						if (i9Index !== undefined) { incrementValuesArray.push(x[i9Index]); }
+						if (i10Index !== undefined) { incrementValuesArray.push(x[i10Index]); }
+						if (incrementValuesArray.length > 0) {
+							objectData['ia'] = incrementValuesArray;
+						} else {
+							objectData['ia'] = [];
+						}
+						//
+
 						arrayData.push(objectData);
 					}
 					line_no++;
@@ -358,7 +463,7 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 					console.log('Total lines : ' + line_no);
 					let data = {
 						uploadArray: arrayData,
-						rowCount: line_no,
+						rowCount: line_no - 1, // Don't count header row
 						timestamp: admin.firestore.FieldValue.serverTimestamp()
 					};
 					let documentRef = admin.firestore().collection('formUploads').doc(uid);

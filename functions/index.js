@@ -21,6 +21,12 @@ const defaultRuntimeOpts = {
 	timeoutSeconds: 60
 };
 
+exports.scheduledFunction = functions.pubsub.schedule('1 of month 12:00').timeZone('America/New_York').onRun((context) => {
+	console.log('Test function');
+	const usersCollectionRef = await admin.firestore().collection('users').get();
+	return null;
+});
+
 /*exports.adminTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
 	.document('users/{userId}')
 	.onWrite((change, context) => {
@@ -219,7 +225,7 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 				let userIndex;
 				let progressiveCountIndex;
 				let p1Index, p2Index, p3Index, p4Index, p5Index, p6Index, p7Index, p8Index, p9Index, p10Index;
-				let r1Index, r2Index, r3Index, r4Index, r5Index, r6Index, r7Index, r8Index, r9Index, r10Index;
+				//let r1Index, r2Index, r3Index, r4Index, r5Index, r6Index, r7Index, r8Index, r9Index, r10Index;
 				//
 				let b1Index, b2Index, b3Index, b4Index, b5Index, b6Index, b7Index, b8Index, b9Index, b10Index;
 				let i1Index, i2Index, i3Index, i4Index, i5Index, i6Index, i7Index, i8Index, i9Index, i10Index;
@@ -276,7 +282,7 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 						}
 
 						//
-						if (x.includes('r_1')) {
+						/*if (x.includes('r_1')) {
 							r1Index = x.indexOf('r_1');
 						}
 						if (x.includes('r_2')) {
@@ -305,7 +311,7 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 						}
 						if (x.includes('r_10')) {
 							r10Index = x.indexOf('r_10');
-						}
+						}*/
 						//
 
 						//
@@ -400,7 +406,7 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 							objectData['da'] = [];
 						}
 						//
-						let resetValuesArray = [];
+						/*let resetValuesArray = [];
 						if (r1Index !== undefined) { resetValuesArray.push(x[r1Index]); }
 						if (r2Index !== undefined) { resetValuesArray.push(x[r2Index]); }
 						if (r3Index !== undefined) { resetValuesArray.push(x[r3Index]); }
@@ -415,7 +421,7 @@ exports.importToDoFileToFirestore = functions.runWith(runtimeOpts).region(region
 							objectData['ra'] = resetValuesArray;
 						} else {
 							objectData['ra'] = [];
-						}
+						}*/
 						//
 						//
 						let baseValuesArray = [];

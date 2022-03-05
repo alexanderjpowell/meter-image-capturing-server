@@ -6,12 +6,12 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const readline = require('readline');
-//const sgMail = require('@sendgrid/mail');
 const region = 'us-central1';
 const defaultBucket = 'meter-image-capturing.appspot.com';
 const toDoFilesBucket = 'to-do-files';
 
 admin.initializeApp();
+const db = admin.firestore();
 
 const runtimeOpts = {
 	timeoutSeconds: 540 // 9 minutes is max timeout
@@ -21,11 +21,54 @@ const defaultRuntimeOpts = {
 	timeoutSeconds: 60
 };
 
-exports.scheduledFunction = functions.pubsub.schedule('1 of month 12:00').timeZone('America/New_York').onRun((context) => {
-	console.log('Test function');
-	const usersCollectionRef = await admin.firestore().collection('users').get();
-	return null;
+exports.resetUploadFile = functions.https.onCall(async(data, context) => {
+	const uid = context.auth.uid;
+	console.log("UID: " + uid);
+	const docId = data.doc_id;
+	if (!docId) {
+		console.log("empty doc id");
+		return false;
+	}
+	const colRef = db.collection('toDoFileData').doc(uid).collection('files').doc(docId).collection('machines');
+	const snapshot = await colRef.get();
+	//
+	let countUnscanned = 0;
+	snapshot.docs.forEach((doc) => {
+		if (doc.data()["isScanned"] === false) {
+			countUnscanned++;
+		}
+	});
+	if (countUnscanned >= 2) { // safeguard in case function gets called erroneously
+		console.log("premature reset function call");
+		return false;
+	}
+	//
+	let count = 1;
+	const batches = [];
+	let batch = db.batch();
+	snapshot.docs.forEach((doc) => {
+		batch.update(doc.ref, { isScanned: false });
+		if (((count % 500) === 0) || (count === snapshot.size)) {
+			batches.push(batch.commit());
+			batch = db.batch(); // Reset batch
+		}
+		count++;
+	});
+
+	const docRef = db.collection('toDoFileData').doc(uid).collection('files').doc(docId);
+	batches.push(docRef.update({ initializedScanning: true }));
+	return Promise.all(batches).then(snapshot => {
+		return true;
+	}).catch((error) => {
+        throw new functions.https.HttpsError('reset-error', error.message);
+    });
 });
+
+// exports.scheduledFunction = functions.pubsub.schedule('1 of month 12:00').timeZone('America/New_York').onRun((context) => {
+// 	console.log('Test function');
+// 	const usersCollectionRef = await admin.firestore().collection('users').get();
+// 	return null;
+// });
 
 /*exports.adminTrigger = functions.runWith(defaultRuntimeOpts).region(region).firestore
 	.document('users/{userId}')
